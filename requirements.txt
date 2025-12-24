@@ -1,6 +1,2 @@
 fastapi
 uvicorn
-sentence-transformers
-scikit-learn
-torch
-numpy

@@ -9,7 +9,7 @@ app = FastAPI(
     version="1.0"
 )
 
-# Load model ONCE (important for performance)
+# Load model once
 model = SentenceTransformer("all-MiniLM-L6-v2")
 
 
@@ -27,6 +27,7 @@ def grade_similarity(score: float):
         return 3
 
 
+# 🔹 MAIN API
 @app.post("/compare")
 def compare_sentences(data: SentencePair):
     embeddings = model.encode([data.sentence1, data.sentence2])
@@ -34,11 +35,48 @@ def compare_sentences(data: SentencePair):
         [embeddings[0]], [embeddings[1]]
     )[0][0]
 
-    grade = grade_similarity(similarity)
-
     return {
         "sentence_1": data.sentence1,
         "sentence_2": data.sentence2,
         "similarity_score": round(similarity, 3),
-        "correlation_grade": grade
+        "correlation_grade": grade_similarity(similarity)
+    }
+
+
+# 🔹 DUMMY TEST ENDPOINT
+@app.get("/test-dummy")
+def test_dummy_data():
+    dummy_tests = [
+        {
+            "sentence1": "Solve matrix operations and understand vectors",
+            "sentence2": "Linear algebra concepts involving matrices and vectors"
+        },
+        {
+            "sentence1": "Analyze computing problems using algorithms",
+            "sentence2": "Solve matrix operations and work with complex numbers"
+        },
+        {
+            "sentence1": "Develop mobile applications using Android Studio",
+            "sentence2": "Understand matrices and linear dependence of vectors"
+        }
+    ]
+
+    results = []
+
+    for test in dummy_tests:
+        embeddings = model.encode([test["sentence1"], test["sentence2"]])
+        similarity = cosine_similarity(
+            [embeddings[0]], [embeddings[1]]
+        )[0][0]
+
+        results.append({
+            "sentence_1": test["sentence1"],
+            "sentence_2": test["sentence2"],
+            "similarity_score": round(similarity, 3),
+            "correlation_grade": grade_similarity(similarity)
+        })
+
+    return {
+        "message": "Dummy test results",
+        "results": results
     }

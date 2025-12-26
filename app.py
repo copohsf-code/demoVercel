@@ -1,6 +1,6 @@
-import os
 import torch
-import numpy as np
+from numpy import dot
+from numpy.linalg import norm
 from fastapi import FastAPI
 from pydantic import BaseModel
 from sentence_transformers import SentenceTransformer

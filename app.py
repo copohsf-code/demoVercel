@@ -5,7 +5,6 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 from sentence_transformers import SentenceTransformer
 
-# 🔹 Environment & Torch limits
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 torch.set_num_threads(1)
 
@@ -16,13 +15,13 @@ app = FastAPI(
 )
 
 # 🔹 Lazy-loaded model
-model = None
+_model = None
 
 def get_model():
-    global model
-    if model is None:
-        model = SentenceTransformer("all-MiniLM-L6-v2")
-    return model
+    global _model
+    if _model is None:
+        _model = SentenceTransformer("all-MiniLM-L6-v2")
+    return _model
 
 
 class SentencePair(BaseModel):
@@ -31,7 +30,7 @@ class SentencePair(BaseModel):
 
 
 def cosine_similarity(a, b):
-    return float(np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b)))
+    return float(dot(a, b) / (norm(a) * norm(b)))
 
 
 def grade_similarity(score: float):
@@ -43,7 +42,6 @@ def grade_similarity(score: float):
         return 3
 
 
-# 🔹 MAIN API
 @app.post("/compare")
 def compare_sentences(data: SentencePair):
     model = get_model()
@@ -62,7 +60,6 @@ def compare_sentences(data: SentencePair):
     }
 
 
-# 🔹 DUMMY TEST ENDPOINT
 @app.get("/test-dummy")
 def test_dummy_data():
     model = get_model()
@@ -98,6 +95,11 @@ def test_dummy_data():
             "similarity_score": round(similarity, 3),
             "correlation_grade": grade_similarity(similarity)
         })
+
+    return {
+        "message": "Dummy test results",
+        "results": results
+    }
 
     return {
         "message": "Dummy test results",

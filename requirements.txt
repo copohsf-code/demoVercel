@@ -1,6 +1,2 @@
 flask
 google-generativeai
-numpy
-pandas
-openpyxl
-reportlab

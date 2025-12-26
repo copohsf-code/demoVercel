@@ -1,5 +1,6 @@
-fastapi
-uvicorn
-sentence-transformers
-torch
+flask
+google-generativeai
 numpy
+pandas
+openpyxl
+reportlab

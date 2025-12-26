@@ -1,39 +1,30 @@
-import torch
-from numpy import dot
-from numpy.linalg import norm
-from fastapi import FastAPI
-from pydantic import BaseModel
-from sentence_transformers import SentenceTransformer
+import os
+import numpy as np
+import pandas as pd
+from flask import Flask, request, jsonify, send_file
+from reportlab.platypus import SimpleDocTemplate, Table
+import google.generativeai as genai
 
-os.environ["TOKENIZERS_PARALLELISM"] = "false"
-torch.set_num_threads(1)
+# 🔐 Gemini API key from Vercel Environment Variable
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
-app = FastAPI(
-    title="Sentence Correlation API",
-    description="Grades semantic correlation between sentences",
-    version="1.0"
-)
+app = Flask(__name__)
 
-# 🔹 Lazy-loaded model
-_model = None
+# ---------- UTIL FUNCTIONS ----------
 
-def get_model():
-    global _model
-    if _model is None:
-        _model = SentenceTransformer("all-MiniLM-L6-v2")
-    return _model
-
-
-class SentencePair(BaseModel):
-    sentence1: str
-    sentence2: str
+def get_embedding(text: str):
+    response = genai.embed_content(
+        model="models/text-embedding-004",
+        content=text
+    )
+    return np.array(response["embedding"])
 
 
 def cosine_similarity(a, b):
-    return float(dot(a, b) / (norm(a) * norm(b)))
+    return float(np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b)))
 
 
-def grade_similarity(score: float):
+def grade(score):
     if score < 0.30:
         return 1
     elif score < 0.60:
@@ -42,66 +33,45 @@ def grade_similarity(score: float):
         return 3
 
 
-@app.post("/compare")
-def compare_sentences(data: SentencePair):
-    model = get_model()
-    embeddings = model.encode(
-        [data.sentence1, data.sentence2],
-        convert_to_numpy=True
-    )
+# ---------- API ENDPOINTS ----------
 
-    similarity = cosine_similarity(embeddings[0], embeddings[1])
+@app.route("/compare", methods=["POST"])
+def compare():
+    data = request.json
 
-    return {
-        "sentence_1": data.sentence1,
-        "sentence_2": data.sentence2,
-        "similarity_score": round(similarity, 3),
-        "correlation_grade": grade_similarity(similarity)
-    }
+    e1 = get_embedding(data["sentence1"])
+    e2 = get_embedding(data["sentence2"])
+
+    sim = cosine_similarity(e1, e2)
+
+    return jsonify({
+        "similarity_score": round(sim, 3),
+        "correlation_grade": grade(sim)
+    })
 
 
-@app.get("/test-dummy")
-def test_dummy_data():
-    model = get_model()
+@app.route("/upload", methods=["POST"])
+def upload_files():
+    co_file = request.files["co"]
+    po_file = request.files["po"]
 
-    dummy_tests = [
-        {
-            "sentence1": "Solve matrix operations and understand vectors",
-            "sentence2": "Linear algebra concepts involving matrices and vectors"
-        },
-        {
-            "sentence1": "Analyze computing problems using algorithms",
-            "sentence2": "Solve matrix operations and work with complex numbers"
-        },
-        {
-            "sentence1": "Develop mobile applications using Android Studio",
-            "sentence2": "Understand matrices and linear dependence of vectors"
-        }
-    ]
+    co_list = pd.read_excel(co_file).iloc[:, 0].dropna().tolist()
+    po_list = pd.read_excel(po_file).iloc[:, 0].dropna().tolist()
 
-    results = []
+    table_data = [["CO Statement", "PO Statement", "Similarity", "Grade"]]
 
-    for test in dummy_tests:
-        embeddings = model.encode(
-            [test["sentence1"], test["sentence2"]],
-            convert_to_numpy=True
-        )
+    for co in co_list:
+        for po in po_list:
+            sim = cosine_similarity(get_embedding(co), get_embedding(po))
+            table_data.append([co, po, round(sim, 3), grade(sim)])
 
-        similarity = cosine_similarity(embeddings[0], embeddings[1])
+    pdf_path = "co_po_report.pdf"
+    doc = SimpleDocTemplate(pdf_path)
+    doc.build([Table(table_data)])
 
-        results.append({
-            "sentence_1": test["sentence1"],
-            "sentence_2": test["sentence2"],
-            "similarity_score": round(similarity, 3),
-            "correlation_grade": grade_similarity(similarity)
-        })
+    return send_file(pdf_path, as_attachment=True)
 
-    return {
-        "message": "Dummy test results",
-        "results": results
-    }
 
-    return {
-        "message": "Dummy test results",
-        "results": results
-    }
+@app.route("/")
+def home():
+    return jsonify({"status": "CO-PO Correlation API is running"})

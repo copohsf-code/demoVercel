@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>CO-PO Mapping System</title>
+</head>
+<body>
+
+<h2>CO–PO Correlation Tool</h2>
+
+<label>Course:</label>
+<select>
+  <option>BSc IT</option>
+  <option>BSc CS</option>
+  <option>BSc DS</option>
+</select>
+
+<label>Semester:</label>
+<select>
+  <option>1</option><option>2</option><option>3</option>
+  <option>4</option><option>5</option><option>6</option>
+</select>
+
+<label>Subject:</label>
+<input type="text" placeholder="Enter Subject">
+
+<hr>
+
+<h3>Upload CO & PO Files</h3>
+<form action="/upload" method="post" enctype="multipart/form-data">
+  CO Excel: <input type="file" name="co" required><br><br>
+  PO Excel: <input type="file" name="po" required><br><br>
+  <button type="submit">Generate PDF Report</button>
+</form>
+
+<hr>
+
+<h3>Manual CO–PO Comparison</h3>
+<textarea id="s1" placeholder="Enter CO statement"></textarea><br><br>
+<textarea id="s2" placeholder="Enter PO statement"></textarea><br><br>
+<button onclick="compare()">Compare</button>
+
+<pre id="output"></pre>
+
+<script>
+async function compare() {
+  const res = await fetch("/compare", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({
+      sentence1: document.getElementById("s1").value,
+      sentence2: document.getElementById("s2").value
+    })
+  });
+
+  document.getElementById("output").innerText =
+    JSON.stringify(await res.json(), null, 2);
+}
+</script>
+
+</body>
+</html>

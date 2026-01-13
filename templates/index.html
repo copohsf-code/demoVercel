@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>CO Upload</title>
+</head>
+<body>
+  <h2>Upload Course Outcomes (CO)</h2>
+
+  <form id="uploadForm">
+    <label>Course:</label>
+    <select name="course">
+      <option>Bachelor of Commerce (B.Com.)</option>
+      <option>Bachelor of Commerce in Banking & Insurance (B.B.I.)</option>
+      <option>Bachelor of Commerce in Accounting & Finance (B.A.F.)</option>
+      <option>Bachelor of Management Studies (B.M.S.)</option>
+      <option>B.Sc. Computer Science</option>
+      <option>B.Sc. Information Technology</option>
+      <option>B.Sc. Data Science</option>
+      <option>B.Sc. Hospitality Studies</option>
+      <option>B.Sc. Actuarial Science</option>
+      <option>B.Sc. Aviation</option>
+      <option>B.A.M.M.C.</option>
+      <option>M.Com. (Accountancy)</option>
+      <option>M.Com. (Management)</option>
+      <option>Master of Arts</option>
+    </select>
+
+    <br><br>
+
+    <label>Year:</label>
+    <select name="year">
+      <option>FY</option>
+      <option>SY</option>
+      <option>TY</option>
+    </select>
+
+    <br><br>
+
+    <label>Batch:</label>
+    <select name="batch">
+      <option>I</option>
+      <option>II</option>
+      <option>III</option>
+    </select>
+
+    <br><br>
+
+    <label>Upload CO CSV:</label>
+    <input type="file" name="file" accept=".csv" required />
+
+    <br><br>
+    <button type="submit">Upload</button>
+  </form>
+
+  <script>
+    document.getElementById("uploadForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+
+      const res = await fetch("/upload-co", {
+        method: "POST",
+        body: formData
+      });
+
+      const data = await res.json();
+      alert(data.message);
+    });
+  </script>
+</body>
+</html>
